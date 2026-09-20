@@ -1,180 +1,240 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { StatusBadge, PriorityBadge, CategoryBadge } from '../../components/ui/Badge';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { SkeletonRow, SkeletonCard } from '../../components/ui/LoadingSpinner';
 import StatCard from '../../components/ui/StatCard';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
-import { ClipboardList, Clock, CheckCircle, AlertTriangle, MapPin, Search, Filter, ChevronLeft, ChevronRight, Eye, UserCheck } from 'lucide-react';
+import {
+  ClipboardList, Clock, CheckCircle, AlertTriangle,
+  Search, SlidersHorizontal, Eye, UserCheck,
+  ChevronLeft, ChevronRight, MapPin, X, Timer
+} from 'lucide-react';
+
+const STATUSES   = ['reported','assigned','in_progress','resolved','closed'];
+const PRIORITIES = ['low','medium','high','critical'];
+const CATEGORIES = ['electrical','plumbing','internet','cleaning','furniture','parking','security','hvac','other'];
 
 export default function StaffDashboard() {
   const { user } = useAuth();
-  const [tickets, setTickets] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
+  const [tickets, setTickets]     = useState([]);
+  const [stats, setStats]         = useState(null);
+  const [loading, setLoading]     = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [page, setPage]           = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [filters, setFilters] = useState({ status: '', priority: '', category: '', search: '' });
+  const [total, setTotal]         = useState(0);
+  const [filters, setFilters]     = useState({ status:'', priority:'', category:'', search:'' });
+  const [search, setSearch]       = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [accepting, setAccepting] = useState(null);
 
-  const fetchData = () => {
-    setLoading(true);
-    const params = new URLSearchParams({ page, limit: 15, ...Object.fromEntries(Object.entries(filters).filter(([,v]) => v)) });
-    Promise.all([
-      api.get(`/tickets?${params}`),
-      api.get('/admin/stats'),
-    ]).then(([ticketsRes, statsRes]) => {
-      setTickets(ticketsRes.data.tickets);
-      setTotalPages(ticketsRes.data.totalPages);
-      setTotal(ticketsRes.data.total);
-      setStats(statsRes.data);
-    }).catch(console.error).finally(() => setLoading(false));
-  };
+  const fetchStats = useCallback(() => {
+    setStatsLoading(true);
+    api.get('/admin/stats')
+      .then(r => setStats(r.data))
+      .catch(console.error)
+      .finally(() => setStatsLoading(false));
+  }, []);
 
-  useEffect(() => { fetchData(); }, [page, filters]);
+  const fetchTickets = useCallback(() => {
+    setLoading(true);
+    const params = new URLSearchParams({
+      page, limit: 15,
+      ...(filters.status   ? { status:   filters.status }   : {}),
+      ...(filters.priority ? { priority: filters.priority } : {}),
+      ...(filters.category ? { category: filters.category } : {}),
+      ...(filters.search   ? { search:   filters.search }   : {}),
+    });
+    api.get(`/tickets?${params}`)
+      .then(r => { setTickets(r.data.tickets); setTotalPages(r.data.totalPages); setTotal(r.data.total); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [page, filters]);
+
+  useEffect(() => { fetchStats(); }, [fetchStats]);
+  useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
   const handleAccept = async (ticketId) => {
     setAccepting(ticketId);
     try {
       await api.put(`/tickets/${ticketId}/assign`, { assignedTo: user.id });
-      toast.success('Ticket accepted and assigned to you');
-      fetchData();
+      toast.success('Ticket accepted');
+      fetchTickets();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to accept ticket');
-    } finally {
-      setAccepting(null);
-    }
+      toast.error(err.response?.data?.error || 'Failed');
+    } finally { setAccepting(null); }
   };
 
-  const handleFilterChange = (key, val) => {
-    setFilters(f => ({ ...f, [key]: val }));
-    setPage(1);
-  };
+  const applySearch  = () => { setFilters(f => ({ ...f, search })); setPage(1); };
+  const clearFilters = () => { setFilters({ status:'', priority:'', category:'', search:'' }); setSearch(''); setPage(1); };
+  const hasFilters   = Object.values(filters).some(Boolean);
 
   return (
-    <div className="space-y-6 fade-in">
+    <div className="space-y-5 fade-in">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Staff Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Manage and resolve assigned issues</p>
+        <h1 className="page-title">Staff Dashboard</h1>
+        <p className="page-sub">Manage and resolve assigned issues</p>
       </div>
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Total Tickets" value={stats.total} icon={ClipboardList} color="blue" />
-          <StatCard title="Open" value={stats.open} icon={AlertTriangle} color="yellow" />
-          <StatCard title="In Progress" value={stats.inProgress} icon={Clock} color="purple" />
-          <StatCard title="Resolved" value={stats.resolved} icon={CheckCircle} color="green" />
-        </div>
-      )}
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {statsLoading ? (
+          Array.from({length:4}).map((_,i) => <SkeletonCard key={i} />)
+        ) : stats ? (
+          <>
+            <StatCard title="Total tickets"  value={stats.total}      icon={ClipboardList}  color="blue" />
+            <StatCard title="Open"           value={stats.open}       icon={AlertTriangle}  color="yellow" />
+            <StatCard title="In progress"    value={stats.inProgress} icon={Clock}          color="purple" />
+            <StatCard title="Resolved"       value={stats.resolved}   icon={CheckCircle}    color="green" />
+          </>
+        ) : null}
+      </div>
 
       {/* Tickets table */}
-      <div className="card">
-        <div className="p-5 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-900">Tickets <span className="text-gray-400 font-normal text-sm">({total})</span></h2>
-            <button onClick={() => setShowFilters(s => !s)} className={`btn-secondary btn-sm ${showFilters ? 'bg-blue-50 border-blue-300 text-blue-700' : ''}`}>
-              <Filter size={14} /> Filters
+      <div className="card overflow-hidden">
+        {/* Table toolbar */}
+        <div className="px-4 py-3 border-b border-slate-100 space-y-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="section-title">
+              Tickets <span className="text-slate-400 font-normal text-2xs ml-1">{total}</span>
+            </p>
+            <button
+              onClick={() => setShowFilters(s => !s)}
+              className={`btn-secondary btn-sm gap-1.5 ${showFilters ? 'bg-blue-50 border-blue-200 text-[#1a56db]' : ''}`}
+            >
+              <SlidersHorizontal size={13} /> Filters
+              {hasFilters && <span className="w-4 h-4 rounded-full bg-[#1a56db] text-white text-xxs flex items-center justify-center">!</span>}
             </button>
           </div>
-
-          <div className="flex gap-3">
-            <div className="flex-1 relative">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input className="input pl-9 text-sm" placeholder="Search by title, ID, or location..."
-                value={filters.search} onChange={e => handleFilterChange('search', e.target.value)} />
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input className="input pl-8" placeholder="Search by title, ticket ID or location…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && applySearch()} />
             </div>
+            <button onClick={applySearch} className="btn-secondary">Search</button>
           </div>
-
           {showFilters && (
-            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">
-              {[['status', ['reported','assigned','in_progress','resolved','closed'], 'All Statuses'],
-                ['priority', ['low','medium','high','critical'], 'All Priorities'],
-                ['category', ['electrical','plumbing','internet','cleaning','furniture','parking','security','hvac','other'], 'All Categories']
-              ].map(([key, opts, placeholder]) => (
-                <select key={key} className="input w-auto text-sm" value={filters[key]} onChange={e => handleFilterChange(key, e.target.value)}>
-                  <option value="">{placeholder}</option>
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+              {[
+                ['status',   STATUSES,   'All statuses'],
+                ['priority', PRIORITIES, 'All priorities'],
+                ['category', CATEGORIES, 'All categories'],
+              ].map(([key, opts, ph]) => (
+                <select key={key} className="input w-auto"
+                  value={filters[key]}
+                  onChange={e => { setFilters(f => ({ ...f, [key]: e.target.value })); setPage(1); }}>
+                  <option value="">{ph}</option>
                   {opts.map(o => <option key={o} value={o}>{o.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase())}</option>)}
                 </select>
               ))}
-              {Object.values(filters).some(Boolean) && (
-                <button onClick={() => { setFilters({ status:'', priority:'', category:'', search:'' }); setPage(1); }}
-                  className="text-sm text-red-500 hover:text-red-700">Clear</button>
+              {hasFilters && (
+                <button onClick={clearFilters} className="btn-ghost btn-sm text-red-500 hover:text-red-700 hover:bg-red-50">
+                  <X size={12} /> Clear
+                </button>
               )}
             </div>
           )}
         </div>
 
-        {loading ? (
-          <LoadingSpinner className="py-16" />
-        ) : tickets.length === 0 ? (
-          <div className="py-12 text-center text-gray-400">
-            <ClipboardList size={36} className="mx-auto mb-2 text-gray-300" />
-            <p>No tickets found</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  {['Ticket ID', 'Title', 'Category', 'Priority', 'Status', 'Location', 'Created', 'Actions'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
-                  ))}
+        {/* Table */}
+        <div className="table-wrap">
+          <table className="table">
+            <thead className="table-sticky">
+              <tr>
+                <th>Ticket</th>
+                <th>Title</th>
+                <th className="hidden sm:table-cell">Category</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th className="hidden md:table-cell">Location</th>
+                <th className="hidden lg:table-cell">Reporter</th>
+                <th className="hidden lg:table-cell">Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({length:8}).map((_,i) => <SkeletonRow key={i} cols={9} />)
+              ) : tickets.length === 0 ? (
+                <tr><td colSpan={9}>
+                  <div className="empty-state py-12">
+                    <div className="empty-state-icon"><ClipboardList size={20} /></div>
+                    <p className="text-slate-500 text-sm font-medium">No tickets found</p>
+                  </div>
+                </td></tr>
+              ) : tickets.map(t => (
+                <tr key={t.id}>
+                  <td>
+                    <Link to={`/tickets/${t.id}`}
+                      className="font-mono text-[#1a56db] font-bold text-xxs hover:underline block">
+                      {t.ticket_id}
+                    </Link>
+                    {t.sla_breached && (
+                      <span className="text-xxs text-red-500 flex items-center gap-0.5 mt-0.5">
+                        <Timer size={9} /> SLA
+                      </span>
+                    )}
+                  </td>
+                  <td className="max-w-[180px]">
+                    <Link to={`/tickets/${t.id}`} className="font-medium text-slate-800 hover:text-[#1a56db] truncate block text-2xs">
+                      {t.title}
+                    </Link>
+                    <p className="text-xxs text-slate-400 truncate">{t.reporter_name}</p>
+                  </td>
+                  <td className="hidden sm:table-cell"><CategoryBadge category={t.category} /></td>
+                  <td><PriorityBadge priority={t.priority} /></td>
+                  <td><StatusBadge status={t.status} /></td>
+                  <td className="hidden md:table-cell">
+                    <span className="flex items-center gap-1 text-slate-500 text-xxs">
+                      <MapPin size={10} className="shrink-0" />{t.location}
+                    </span>
+                  </td>
+                  <td className="hidden lg:table-cell text-slate-500 text-2xs">{t.reporter_name}</td>
+                  <td className="hidden lg:table-cell text-slate-400 text-xxs whitespace-nowrap">
+                    {formatDistanceToNow(new Date(t.created_at), { addSuffix: true })}
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-1.5">
+                      <Link to={`/tickets/${t.id}`} className="btn-secondary btn-sm btn-icon" title="View">
+                        <Eye size={13} />
+                      </Link>
+                      {t.status === 'reported' && !t.assigned_to && (
+                        <button
+                          onClick={() => handleAccept(t.id)}
+                          disabled={accepting === t.id}
+                          className="btn-primary btn-sm gap-1"
+                          title="Accept ticket"
+                        >
+                          <UserCheck size={12} />
+                          {accepting === t.id ? '…' : 'Accept'}
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {tickets.map(ticket => (
-                  <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-blue-600 font-bold text-xs">{ticket.ticket_id}</span>
-                      {ticket.sla_breached && <span className="block text-xs text-red-500 mt-0.5">⚠ SLA</span>}
-                    </td>
-                    <td className="px-4 py-3 max-w-xs">
-                      <p className="font-medium text-gray-900 truncate">{ticket.title}</p>
-                      <p className="text-xs text-gray-400">{ticket.reporter_name}</p>
-                    </td>
-                    <td className="px-4 py-3"><CategoryBadge category={ticket.category} /></td>
-                    <td className="px-4 py-3"><PriorityBadge priority={ticket.priority} /></td>
-                    <td className="px-4 py-3"><StatusBadge status={ticket.status} /></td>
-                    <td className="px-4 py-3">
-                      <span className="flex items-center gap-1 text-gray-600 text-xs"><MapPin size={11} />{ticket.location}</span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
-                      {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <Link to={`/tickets/${ticket.id}`} className="btn-secondary btn-sm">
-                          <Eye size={13} />
-                        </Link>
-                        {ticket.status === 'reported' && !ticket.assigned_to && (
-                          <button onClick={() => handleAccept(ticket.id)}
-                            disabled={accepting === ticket.id}
-                            className="btn-primary btn-sm">
-                            <UserCheck size={13} />
-                            {accepting === ticket.id ? '...' : 'Accept'}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
-            <p className="text-xs text-gray-500">Page {page} of {totalPages}</p>
-            <div className="flex gap-2">
-              <button onClick={() => setPage(p => p-1)} disabled={page===1} className="btn-secondary btn-sm"><ChevronLeft size={13} /></button>
-              <button onClick={() => setPage(p => p+1)} disabled={page===totalPages} className="btn-secondary btn-sm"><ChevronRight size={13} /></button>
+          <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-100">
+            <p className="text-xxs text-slate-400">Page {page} of {totalPages}</p>
+            <div className="flex gap-1.5">
+              <button onClick={() => setPage(p=>p-1)} disabled={page===1} className="btn-secondary btn-sm">
+                <ChevronLeft size={13} />
+              </button>
+              <button onClick={() => setPage(p=>p+1)} disabled={page===totalPages} className="btn-secondary btn-sm">
+                <ChevronRight size={13} />
+              </button>
             </div>
           </div>
         )}

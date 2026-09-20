@@ -2,23 +2,34 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
-import { Wrench } from 'lucide-react';
+import { Zap, ArrowRight } from 'lucide-react';
 
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', department: '' });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = 'Full name is required';
+    if (!form.email) e.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Enter a valid email';
+    if (!form.password) e.password = 'Password is required';
+    else if (form.password.length < 6) e.password = 'Minimum 6 characters';
+    return e;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password.length < 6) {
-      return toast.error('Password must be at least 6 characters');
-    }
+    const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setErrors({});
     setLoading(true);
     try {
       const user = await register(form);
-      toast.success(`Welcome to FixFlow, ${user.name}!`);
+      toast.success(`Welcome to FixFlow, ${user.name.split(' ')[0]}!`);
       navigate('/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed');
@@ -27,52 +38,80 @@ export default function Register() {
     }
   };
 
+  const field = (key) => ({
+    value: form[key],
+    onChange: e => { setForm(f => ({ ...f, [key]: e.target.value })); setErrors(er => ({ ...er, [key]: '' })); },
+  });
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2.5 mb-3">
-            <div className="bg-blue-600 text-white p-2 rounded-xl">
-              <Wrench size={24} />
-            </div>
-            <span className="text-3xl font-bold text-gray-900">Fix<span className="text-blue-600">Flow</span></span>
+    <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center p-6">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <div className="flex items-center gap-2 mb-7">
+          <div className="w-7 h-7 rounded-lg bg-[#1a56db] flex items-center justify-center">
+            <Zap size={14} className="text-white" fill="white" />
           </div>
-          <p className="text-gray-500 text-sm">Create your account to report issues</p>
+          <span className="font-bold text-slate-900 text-base">FixFlow</span>
         </div>
 
-        <div className="card p-8 fade-in">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Create account</h2>
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-slate-900">Create an account</h2>
+          <p className="text-slate-500 text-2xs mt-1">Get started — it's free</p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="label">Full name</label>
-              <input type="text" required className="input" placeholder="John Doe"
-                value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-            </div>
-            <div>
-              <label className="label">Email address</label>
-              <input type="email" required className="input" placeholder="you@example.com"
-                value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
-            </div>
-            <div>
-              <label className="label">Department <span className="text-gray-400">(optional)</span></label>
-              <input type="text" className="input" placeholder="e.g. Engineering, HR"
-                value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} />
-            </div>
-            <div>
-              <label className="label">Password</label>
-              <input type="password" required minLength={6} className="input" placeholder="Min. 6 characters"
-                value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
+          <div className="input-group">
+            <label className="label" htmlFor="name">Full name</label>
+            <input id="name" type="text" autoFocus autoComplete="name"
+              className={`input ${errors.name ? 'input-error' : ''}`} placeholder="Jane Doe"
+              {...field('name')} />
+            {errors.name && <p className="hint text-red-500">{errors.name}</p>}
+          </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full btn-lg">
-              {loading ? 'Creating account...' : 'Create account'}
-            </button>
-          </form>
+          <div className="input-group">
+            <label className="label" htmlFor="reg-email">Email address</label>
+            <input id="reg-email" type="email" autoComplete="email"
+              className={`input ${errors.email ? 'input-error' : ''}`} placeholder="you@company.com"
+              {...field('email')} />
+            {errors.email && <p className="hint text-red-500">{errors.email}</p>}
+          </div>
 
-          <p className="mt-4 text-center text-sm text-gray-500">
+          <div className="input-group">
+            <label className="label" htmlFor="dept">
+              Department <span className="text-slate-400 font-normal">— optional</span>
+            </label>
+            <input id="dept" type="text" autoComplete="organization"
+              className="input" placeholder="e.g. Engineering, Operations"
+              {...field('department')} />
+          </div>
+
+          <div className="input-group">
+            <label className="label" htmlFor="reg-pass">Password</label>
+            <input id="reg-pass" type="password" autoComplete="new-password" minLength={6}
+              className={`input ${errors.password ? 'input-error' : ''}`} placeholder="Min. 6 characters"
+              {...field('password')} />
+            {errors.password && <p className="hint text-red-500">{errors.password}</p>}
+          </div>
+
+          <button type="submit" disabled={loading} className="btn-primary btn-lg w-full mt-1">
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" />
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+                Creating account…
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">Create account <ArrowRight size={14} /></span>
+            )}
+          </button>
+        </form>
+
+        <div className="mt-5 pt-5 border-t border-slate-100 text-center">
+          <p className="text-2xs text-slate-500">
             Already have an account?{' '}
-            <Link to="/login" className="text-blue-600 font-medium hover:underline">Sign in</Link>
+            <Link to="/login" className="text-[#1a56db] font-semibold hover:underline">Sign in</Link>
           </p>
         </div>
       </div>

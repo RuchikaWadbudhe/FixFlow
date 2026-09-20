@@ -1,24 +1,38 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/axios';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { SkeletonRow } from '../../components/ui/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { Users, UserCheck } from 'lucide-react';
+import { Users, ShieldCheck, Wrench, User } from 'lucide-react';
 
-const ROLE_STYLES = {
-  admin: 'bg-purple-100 text-purple-700',
-  staff: 'bg-blue-100 text-blue-700',
-  user: 'bg-green-100 text-green-700',
+const ROLE_CONFIG = {
+  admin: { label: 'Admin',  cls: 'bg-violet-50 text-violet-700 border border-violet-200', icon: ShieldCheck },
+  staff: { label: 'Staff',  cls: 'bg-blue-50 text-blue-700 border border-blue-200',       icon: Wrench },
+  user:  { label: 'User',   cls: 'bg-slate-50 text-slate-600 border border-slate-200',    icon: User },
 };
 
+function RoleBadge({ role }) {
+  const c = ROLE_CONFIG[role] || ROLE_CONFIG.user;
+  return <span className={`badge ${c.cls} capitalize`}>{c.label}</span>;
+}
+
+function Avatar({ name }) {
+  const initials = name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || '?';
+  return (
+    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-xxs font-bold shrink-0">
+      {initials}
+    </div>
+  );
+}
+
 export default function AdminUsers() {
-  const [users, setUsers] = useState([]);
+  const [users,   setUsers]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
 
   useEffect(() => {
     api.get('/admin/users')
-      .then(res => setUsers(res.data.users))
+      .then(r => setUsers(r.data.users))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -26,83 +40,104 @@ export default function AdminUsers() {
   const handleRoleChange = async (userId, newRole) => {
     setUpdating(userId);
     try {
-      const res = await api.put(`/admin/users/${userId}/role`, { role: newRole });
-      setUsers(u => u.map(user => user.id === userId ? { ...user, role: res.data.user.role } : user));
-      toast.success('User role updated');
+      const r = await api.put(`/admin/users/${userId}/role`, { role: newRole });
+      setUsers(u => u.map(user => user.id === userId ? { ...user, role: r.data.user.role } : user));
+      toast.success('Role updated');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to update role');
-    } finally {
-      setUpdating(null);
-    }
+      toast.error(err.response?.data?.error || 'Failed');
+    } finally { setUpdating(null); }
   };
 
+  const counts = users.reduce((acc, u) => { acc[u.role] = (acc[u.role]||0)+1; return acc; }, {});
+
   return (
-    <div className="space-y-5 fade-in">
+    <div className="space-y-4 fade-in">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-        <p className="text-gray-500 text-sm">{users.length} registered users</p>
+        <h1 className="page-title">User Management</h1>
+        <p className="page-sub">{users.length} registered users</p>
       </div>
 
+      {/* Summary pills */}
+      {!loading && (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(ROLE_CONFIG).map(([role, c]) => (
+            <div key={role} className={`flex items-center gap-1.5 badge ${c.cls} px-3 py-1.5 h-auto`}>
+              <c.icon size={11} />
+              <span className="font-semibold">{counts[role] || 0}</span>
+              <span>{c.label}{(counts[role]||0) !== 1 ? 's' : ''}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="card overflow-hidden">
-        {loading ? (
-          <LoadingSpinner className="py-16" />
-        ) : users.length === 0 ? (
-          <div className="py-12 text-center">
-            <Users size={36} className="mx-auto text-gray-300 mb-2" />
-            <p className="text-gray-400">No users found</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  {['Name','Email','Department','Role','Tickets','Joined','Actions'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
-                  ))}
+        <div className="table-wrap">
+          <table className="table">
+            <thead className="table-sticky">
+              <tr>
+                <th>User</th>
+                <th className="hidden sm:table-cell">Email</th>
+                <th className="hidden md:table-cell">Department</th>
+                <th>Role</th>
+                <th className="hidden lg:table-cell">Tickets</th>
+                <th className="hidden lg:table-cell">Joined</th>
+                <th>Change role</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({length:6}).map((_,i) => <SkeletonRow key={i} cols={7} />)
+              ) : users.length === 0 ? (
+                <tr><td colSpan={7}>
+                  <div className="empty-state py-12">
+                    <div className="empty-state-icon"><Users size={20} /></div>
+                    <p className="text-slate-500 text-sm font-medium">No users found</p>
+                  </div>
+                </td></tr>
+              ) : users.map(u => (
+                <tr key={u.id}>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <Avatar name={u.name} />
+                      <span className="text-2xs font-semibold text-slate-800 truncate max-w-[120px]">{u.name}</span>
+                    </div>
+                  </td>
+                  <td className="hidden sm:table-cell text-slate-500 text-2xs">{u.email}</td>
+                  <td className="hidden md:table-cell text-slate-500 text-2xs">{u.department || <span className="text-slate-300">—</span>}</td>
+                  <td><RoleBadge role={u.role} /></td>
+                  <td className="hidden lg:table-cell">
+                    <span className="text-2xs text-slate-600 font-medium">{u.ticket_count}</span>
+                  </td>
+                  <td className="hidden lg:table-cell text-slate-400 text-xxs">
+                    {format(new Date(u.created_at), 'MMM d, yyyy')}
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <select
+                        className="input w-auto text-xxs"
+                        style={{ height: 28 }}
+                        value={u.role}
+                        onChange={e => handleRoleChange(u.id, e.target.value)}
+                        disabled={updating === u.id}
+                      >
+                        <option value="user">User</option>
+                        <option value="staff">Staff</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      {updating === u.id && (
+                        <svg className="animate-spin w-3.5 h-3.5 text-blue-500" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25"/>
+                          <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                        </svg>
+                      )}
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {users.map(user => (
-                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
-                          {user.name[0].toUpperCase()}
-                        </div>
-                        <span className="font-medium text-gray-900">{user.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{user.email}</td>
-                    <td className="px-4 py-3 text-gray-500">{user.department || '—'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`badge ${ROLE_STYLES[user.role]}`}>
-                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{user.ticket_count}</td>
-                    <td className="px-4 py-3 text-xs text-gray-400">
-                      {format(new Date(user.created_at), 'MMM d, yyyy')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <select
-                          className="input text-xs py-1 w-28"
-                          value={user.role}
-                          onChange={e => handleRoleChange(user.id, e.target.value)}
-                          disabled={updating === user.id}>
-                          <option value="user">User</option>
-                          <option value="staff">Staff</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                        {updating === user.id && <span className="text-xs text-gray-400">Updating...</span>}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
