@@ -68,48 +68,7 @@ FixFlow/
 
 ## Running it locally
 
-You'll need Node.js and a PostgreSQL database (we used Supabase).
-
-**1. Clone the repo**
-```bash
-git clone https://github.com/RuchikaWadbudhe/FixFlow.git
-cd FixFlow
-```
-
-**2. Set up the backend**
-```bash
-cd backend
-npm install
-```
-
-Create a `.env` file based on `.env.example`:
-```
-PORT=5000
-DATABASE_URL=your_postgresql_connection_string
-JWT_SECRET=your_secret_key
-JWT_EXPIRES_IN=7d
-FRONTEND_URL=http://localhost:5173
-```
-
-Run the database migration (creates tables + seed users):
-```bash
-node src/db/migrate.js
-```
-
-Start the backend:
-```bash
-npm run dev
-```
-
-**3. Set up the frontend**
-```bash
-cd frontend
-npm install
-```
-
-Create a `.env` file:
-```
-VITE_API_URL=http://localhost:5000/api
+000/api
 ```
 
 Start the frontend:
@@ -117,17 +76,11 @@ Start the frontend:
 npm run dev
 ```
 
-App runs at `http://localhost:5173`
+
 
 ---
 
-## Demo accounts
 
-| Role  | Email | Password |
-|-------|-------|----------|
-| Admin | admin@fixflow.com | password |
-| Staff | staff@fixflow.com | password |
-| User  | user@fixflow.com  | password |
 
 You can also click the quick-fill buttons on the login page.
 
