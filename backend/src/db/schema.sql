@@ -92,8 +92,8 @@ CREATE INDEX idx_tickets_category ON tickets(category);
 CREATE INDEX idx_tickets_created_at ON tickets(created_at DESC);
 CREATE INDEX idx_comments_ticket_id ON comments(ticket_id);
 
--- Seed users (password: 'password' hashed with bcrypt)
+-- Seed users
 INSERT INTO users (name, email, password, role, department) VALUES
-('Admin User',   'admin@fixflow.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'Administration'),
-('Staff Member', 'staff@fixflow.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'staff', 'Maintenance'),
-('John Doe',     'user@fixflow.com',  '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'user',  NULL);
+('Admin User',   'admin@fixflow.com', '$2a$10$AC5reYayyFH1AhMaoLKTRuPkF/2Qb7Kg76smMmTmRZieypCddK.O6', 'admin', 'Administration'),
+('Staff Member', 'staff@fixflow.com', '$2a$10$cXduL6hq8B8wtQGTS0oen.WHQWGj/UWozrIxfdpR/7J0A92qKDLPS', 'staff', 'Maintenance'),
+('John Doe',     'user@fixflow.com',  '$2a$10$WFUXVEgD84nQV0t.YWmMLudgs.Txnjazc5vT9Ps3tl95rL7vFJ1aK', 'user',  NULL);

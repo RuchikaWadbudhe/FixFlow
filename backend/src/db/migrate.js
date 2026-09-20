@@ -8,9 +8,9 @@ async function migrate() {
     await pool.query(sql);
     console.log('✅ Database schema created successfully!');
     console.log('✅ Seed users created:');
-    console.log('   Admin:  admin@fixflow.com  / password');
-    console.log('   Staff:  staff@fixflow.com  / password');
-    console.log('   User:   user@fixflow.com   / password');
+    console.log('   Admin:  admin@fixflow.com  / Admin@FixFlow#2026');
+    console.log('   Staff:  staff@fixflow.com  / Staff@FixFlow#2026');
+    console.log('   User:   user@fixflow.com   / User@FixFlow#2026');
     process.exit(0);
   } catch (err) {
     console.error('❌ Migration failed:', err.message);
