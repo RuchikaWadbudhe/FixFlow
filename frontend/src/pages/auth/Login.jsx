@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, ArrowRight, Zap, CheckCircle, Shield, Clock, BarChart3 } from 'lucide-react';
+import LoginIllustration from '../../components/illustrations/LoginIllustration';
 
 const gold = '#C8A96B';
 
@@ -133,6 +134,14 @@ export default function Login() {
               <FeaturePill icon={Shield}    text="Role-based access control"   color={gold} />
               <FeaturePill icon={Clock}     text="SLA enforcement & escalation" color="#7c3aed" />
               <FeaturePill icon={CheckCircle} text="End-to-end issue lifecycle" color="#059669" />
+            </motion.div>
+
+            {/* SVG Illustration */}
+            <motion.div variants={fade} className="relative">
+              <LoginIllustration className="w-full max-w-[320px] mx-auto h-auto opacity-90" />
+              {/* Glow under illustration */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-12 blur-2xl rounded-full"
+                style={{ background:'rgba(26,86,219,0.2)' }} />
             </motion.div>
 
             {/* Mini ticket preview */}

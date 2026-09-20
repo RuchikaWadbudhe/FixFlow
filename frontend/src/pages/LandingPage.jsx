@@ -7,6 +7,7 @@ import {
   ChevronRight, Ticket, MessageSquare, TrendingUp,
   Lock, Layers, ExternalLink
 } from 'lucide-react';
+import HeroIllustration from '../components/illustrations/HeroIllustration';
 
 /* ── Helpers ── */
 const gold = '#C8A96B';
@@ -212,6 +213,16 @@ function Hero() {
               <CheckCircle size={13} style={{ color:gold }} /> {t}
             </span>
           ))}
+        </motion.div>
+
+        {/* Hero illustration — floats beside the headline on large screens */}
+        <motion.div
+          initial={{ opacity:0, x:40 }} animate={{ opacity:1, x:0 }}
+          transition={{ duration:1, delay:0.4, ease:[0.22,1,0.36,1] }}
+          className="hidden xl:block absolute right-8 top-1/2 -translate-y-1/2 w-[420px] pointer-events-none"
+          style={{ zIndex:1 }}
+        >
+          <HeroIllustration className="w-full h-auto opacity-80" />
         </motion.div>
 
         {/* Dashboard mockup */}
