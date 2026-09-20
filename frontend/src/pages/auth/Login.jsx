@@ -27,15 +27,6 @@ export default function Login() {
     }
   };
 
-  const fillDemo = (role) => {
-    const demos = {
-      admin: { email: 'admin@fixflow.com', password: 'password' },
-      staff: { email: 'staff@fixflow.com', password: 'password' },
-      user:  { email: 'user@fixflow.com',  password: 'password' },
-    };
-    setForm(demos[role]);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -85,19 +76,6 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
-
-          {/* Demo accounts */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-xs font-medium text-blue-700 mb-2">Demo accounts (click to fill):</p>
-            <div className="flex gap-2 flex-wrap">
-              {['admin', 'staff', 'user'].map(role => (
-                <button key={role} onClick={() => fillDemo(role)}
-                  className="text-xs px-3 py-1.5 bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition-colors capitalize">
-                  {role}
-                </button>
-              ))}
-            </div>
-          </div>
 
           <p className="mt-4 text-center text-sm text-gray-500">
             Don't have an account?{' '}
