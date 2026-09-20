@@ -1,131 +1,166 @@
-# FixFlow — Real-Time Issue Reporting & Resolution System
+# FixFlow — Issue Reporting & Resolution System
 
-A full-stack ticketing platform for colleges, offices, and residential communities to report, assign, track, and resolve maintenance issues.
+FixFlow is a structured ticketing platform built for colleges, offices, and residential communities to report, track, and resolve maintenance issues — things like broken lights, water leakage, internet problems, or damaged furniture.
 
----
-
-## Tech Stack
-
-| Layer      | Technology                        |
-|------------|-----------------------------------|
-| Frontend   | React 18 + Vite + Tailwind CSS v3 |
-| Backend    | Node.js + Express                 |
-| Database   | PostgreSQL                        |
-| Auth       | JWT (JSON Web Tokens)             |
-| Charts     | Recharts                          |
-| Icons      | Lucide React                      |
+Instead of reporting issues through WhatsApp groups or emails that get lost, FixFlow gives everyone a proper workflow: report an issue, get a ticket ID, watch it move through stages, and close it when it's fixed.
 
 ---
 
-## Project Structure
+## What it does
+
+There are three types of users — regular users, staff, and admins. Each sees a different view.
+
+**As a user**, you can:
+- Report a new issue with a title, description, location, category, priority, and optionally a photo
+- Get an auto-generated ticket ID like `FF-1042`
+- Track your ticket through: `Reported → Assigned → In Progress → Resolved → Closed`
+- Comment on your ticket and get updates from staff
+- Rate the resolution once the issue is fixed
+
+**As a staff member**, you can:
+- See all incoming tickets and accept unassigned ones
+- Change ticket status as you work on it
+- Add internal notes (only visible to staff) or public comments
+- Upload proof of resolution with notes
+
+**As an admin**, you can:
+- See a full dashboard with stats — total issues, open, in progress, resolved, SLA breaches, average resolution time
+- View charts broken down by category, priority, location, and a 7-day trend
+- Assign tickets to specific staff members
+- Manage users and change their roles
+
+---
+
+## Tech stack
+
+- **Frontend** — React, Vite, Tailwind CSS, Recharts, React Router
+- **Backend** — Node.js, Express, JWT authentication
+- **Database** — PostgreSQL on Supabase
+- **File uploads** — Multer (photos + resolution proofs)
+- **Deployed on** — Vercel (frontend) + Render (backend)
+
+---
+
+## Project structure
 
 ```
 FixFlow/
-├── backend/          # Node.js/Express API
+├── backend/
 │   ├── src/
-│   │   ├── db/       # PostgreSQL pool, schema, migration
-│   │   ├── middleware/ # JWT auth, file upload (multer)
-│   │   ├── routes/   # auth, tickets, admin
-│   │   └── index.js  # Express app entry
-│   ├── uploads/      # Uploaded photos & resolution proofs
-│   └── .env          # Environment config
-└── frontend/         # React + Vite SPA
-    └── src/
-        ├── api/       # Axios instance
-        ├── context/   # AuthContext (JWT state)
-        ├── components/ # Layout, UI components
-        └── pages/     # auth, user, staff, admin
+│   │   ├── db/           # Database connection, schema, migration script
+│   │   ├── middleware/   # JWT auth, file upload handling
+│   │   ├── routes/       # auth, tickets, admin API routes
+│   │   └── index.js      # Express server entry point
+│   ├── uploads/          # Stored photos and resolution proofs
+│   └── .env.example      # Environment variable template
+│
+└── frontend/
+    ├── src/
+    │   ├── api/          # Axios instance with interceptors
+    │   ├── context/      # Auth context with JWT state
+    │   ├── components/   # Shared layout and UI components
+    │   └── pages/        # auth, user, staff, admin pages
+    ├── .env.example
+    └── vite.config.js
 ```
 
 ---
 
-## Setup & Run
+## Running it locally
 
-### 1. PostgreSQL
+You'll need Node.js and a PostgreSQL database (we used Supabase).
 
-Create a database named `fixflow`:
-
-```sql
-CREATE DATABASE fixflow;
+**1. Clone the repo**
+```bash
+git clone https://github.com/RuchikaWadbudhe/FixFlow.git
+cd FixFlow
 ```
 
-Update `backend/.env` with your credentials:
-
-```env
-DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/fixflow
-JWT_SECRET=fixflow_super_secret_jwt_key_2024
-```
-
-### 2. Run Database Migration
-
+**2. Set up the backend**
 ```bash
 cd backend
 npm install
+```
+
+Create a `.env` file based on `.env.example`:
+```
+PORT=5000
+DATABASE_URL=your_postgresql_connection_string
+JWT_SECRET=your_secret_key
+JWT_EXPIRES_IN=7d
+FRONTEND_URL=http://localhost:5173
+```
+
+Run the database migration (creates tables + seed users):
+```bash
 node src/db/migrate.js
 ```
 
-This creates all tables, triggers, and seeds 3 demo users.
-
-### 3. Start Backend
-
+Start the backend:
 ```bash
-cd backend
-npm run dev     # development (nodemon)
-# or
-npm start       # production
-```
-
-Backend runs on: http://localhost:5000
-
-### 4. Start Frontend
-
-```bash
-cd frontend
-npm install
 npm run dev
 ```
 
-Frontend runs on: http://localhost:5173
+**3. Set up the frontend**
+```bash
+cd frontend
+npm install
+```
+
+Create a `.env` file:
+```
+VITE_API_URL=http://localhost:5000/api
+```
+
+Start the frontend:
+```bash
+npm run dev
+```
+
+App runs at `http://localhost:5173`
 
 ---
 
-## Demo Accounts
+## Demo accounts
 
-| Role  | Email                  | Password |
-|-------|------------------------|----------|
-| Admin | admin@fixflow.com      | password |
-| Staff | staff@fixflow.com      | password |
-| User  | user@fixflow.com       | password |
+| Role  | Email | Password |
+|-------|-------|----------|
+| Admin | admin@fixflow.com | password |
+| Staff | staff@fixflow.com | password |
+| User  | user@fixflow.com  | password |
+
+You can also click the quick-fill buttons on the login page.
 
 ---
 
-## Features
+## SLA timers
 
-### User
-- Register / Login
-- Create tickets with title, description, category, priority, location, and optional photo
-- Auto-generated ticket ID (FF-1001, FF-1002, ...)
-- Multi-step ticket creation form
-- Track ticket: Reported → Assigned → In Progress → Resolved → Closed
-- View comments and activity log
-- Rate resolution (1–5 stars)
+Each priority level has a deadline:
 
-### Staff Dashboard
-- View all tickets with filters (status, priority, category, search)
-- One-click accept unassigned tickets
-- Change ticket status
-- Add user-facing or internal comments
-- Upload resolution proof and notes
+| Priority | SLA |
+|----------|-----|
+| Critical | 4 hours |
+| High | 24 hours |
+| Medium | 48 hours |
+| Low | 72 hours |
 
-### Admin Dashboard
-- Stats: Total, Open, In Progress, Resolved, Closed, High Priority, SLA Breached, Avg. Resolution Time
-- Charts: Issues by Category (bar), Issues by Priority (pie), 7-day Trend (line), Top Locations (bar)
-- Full ticket management table with assignment
-- User management: view all users, change roles
+Tickets that breach their SLA are flagged in the dashboard.
 
-### Other
-- SLA timers by priority (Critical: 4h, High: 24h, Medium: 48h, Low: 72h)
-- SLA breach indicators
-- Internal (staff-only) comments
-- Responsive design (mobile + desktop)
-- Role-based access control
+---
+
+## Deployment
+
+- Frontend is on Vercel — set `VITE_API_URL` in project environment variables
+- Backend is on Render — set all variables from `.env.example` in the service environment
+- Database is on Supabase — connection string goes in `DATABASE_URL`
+
+Live URL: https://fix-flow-iota.vercel.app
+
+---
+
+## Notes
+
+- `.env` files are gitignored — never committed to the repo
+- Internal comments (staff-only notes) are hidden from the ticket reporter
+- The ticket ID sequence starts at FF-1000 and auto-increments
+- Photos and resolution proofs are stored in `backend/uploads/` (local) — for production, consider moving to S3 or Supabase storage
