@@ -167,7 +167,7 @@ export default function TicketDetail() {
           {ticket.photo_url && (
             <div className="mt-4 pt-4 border-t border-gray-100">
               <p className="text-xs text-gray-400 mb-2 flex items-center gap-1"><Image size={12} /> Photo</p>
-              <img src={`http://localhost:5000${ticket.photo_url}`} alt="Issue" className="max-w-xs rounded-lg border" />
+              <img src={`${import.meta.env.VITE_API_URL?.replace('/api','')}${ticket.photo_url}`} alt="Issue" className="max-w-xs rounded-lg border" />
             </div>
           )}
 
@@ -176,7 +176,7 @@ export default function TicketDetail() {
               <p className="text-xs text-green-600 font-semibold mb-1 flex items-center gap-1"><CheckCircle size={12} /> Resolution Notes</p>
               <p className="text-sm text-green-800">{ticket.resolution_notes}</p>
               {ticket.resolution_proof_url && (
-                <img src={`http://localhost:5000${ticket.resolution_proof_url}`} alt="Resolution proof" className="max-w-xs rounded-lg border mt-2" />
+                <img src={`${import.meta.env.VITE_API_URL?.replace('/api','')}${ticket.resolution_proof_url}`} alt="Resolution proof" className="max-w-xs rounded-lg border mt-2" />
               )}
             </div>
           )}
