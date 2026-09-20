@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { PageLoader } from './components/ui/LoadingSpinner';
 import AppLayout from './components/layout/AppLayout';
 
+import LandingPage    from './pages/LandingPage';
 import Login          from './pages/auth/Login';
 import Register       from './pages/auth/Register';
 import UserDashboard  from './pages/user/UserDashboard';
@@ -40,29 +41,24 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Public */}
+      <Route path="/"         element={<LandingPage />} />
       <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-      <Route path="/"         element={<Navigate to="/login" replace />} />
 
       {/* Protected shell */}
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-        {/* User */}
-        <Route path="/dashboard"  element={<ProtectedRoute roles={['user']}><UserDashboard /></ProtectedRoute>} />
+        <Route path="/dashboard"   element={<ProtectedRoute roles={['user']}><UserDashboard /></ProtectedRoute>} />
         <Route path="/tickets/new" element={<ProtectedRoute roles={['user']}><CreateTicket /></ProtectedRoute>} />
-        <Route path="/my-tickets" element={<ProtectedRoute roles={['user']}><MyTickets /></ProtectedRoute>} />
+        <Route path="/my-tickets"  element={<ProtectedRoute roles={['user']}><MyTickets /></ProtectedRoute>} />
         <Route path="/tickets/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
-
-        {/* Staff */}
         <Route path="/staff"         element={<ProtectedRoute roles={['staff','admin']}><StaffDashboard /></ProtectedRoute>} />
         <Route path="/staff/tickets" element={<ProtectedRoute roles={['staff','admin']}><StaffDashboard /></ProtectedRoute>} />
-
-        {/* Admin */}
         <Route path="/admin"         element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/tickets" element={<ProtectedRoute roles={['admin']}><AdminTickets /></ProtectedRoute>} />
         <Route path="/admin/users"   element={<ProtectedRoute roles={['admin']}><AdminUsers /></ProtectedRoute>} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
@@ -77,8 +73,7 @@ export default function App() {
           toastOptions={{
             duration: 3000,
             style: {
-              fontSize: '13px',
-              borderRadius: '8px',
+              fontSize: '13px', borderRadius: '8px',
               padding: '10px 14px',
               boxShadow: '0 4px 12px rgb(0 0 0 / 0.1)',
               border: '1px solid #e2e8f0',

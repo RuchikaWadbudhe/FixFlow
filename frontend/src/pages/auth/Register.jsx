@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 import { Zap, ArrowRight } from 'lucide-react';
+const gold = '#C8A96B';
 
 export default function Register() {
   const { register } = useAuth();
@@ -44,16 +46,26 @@ export default function Register() {
   });
 
   return (
-    <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center p-6">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center p-6 relative overflow-hidden">
+      <div className="absolute inset-0 opacity-40"
+        style={{ backgroundImage:'radial-gradient(circle at 70% 30%, rgba(26,86,219,0.06), transparent 50%), radial-gradient(circle at 20% 80%, rgba(200,169,107,0.04), transparent 50%)' }} />
+
+      <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
+        transition={{ duration:0.6, ease:[0.22,1,0.36,1] }}
+        className="relative w-full max-w-[400px]">
         {/* Logo */}
         <div className="flex items-center gap-2 mb-7">
-          <div className="w-7 h-7 rounded-lg bg-[#1a56db] flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+            style={{ background:`linear-gradient(135deg, #1a56db, #3b82f6)` }}>
             <Zap size={14} className="text-white" fill="white" />
           </div>
-          <span className="font-bold text-slate-900 text-base">FixFlow</span>
+          <span className="font-bold text-slate-900" style={{ fontSize:16 }}>
+            Fix<span style={{ color:gold }}>Flow</span>
+          </span>
         </div>
 
+        <div className="rounded-2xl p-8"
+          style={{ background:'white', boxShadow:'0 8px 40px rgba(0,0,0,0.08)', border:'1px solid rgba(226,232,240,0.8)' }}>
         <div className="mb-6">
           <h2 className="text-xl font-bold text-slate-900">Create an account</h2>
           <p className="text-slate-500 text-2xs mt-1">Get started — it's free</p>
@@ -114,7 +126,14 @@ export default function Register() {
             <Link to="/login" className="text-[#1a56db] font-semibold hover:underline">Sign in</Link>
           </p>
         </div>
-      </div>
+        </div>
+
+        <div className="text-center mt-4">
+          <Link to="/" className="text-slate-400 hover:text-slate-600 transition-colors" style={{ fontSize:13 }}>
+            ← Back to home
+          </Link>
+        </div>
+      </motion.div>
     </div>
   );
 }
